@@ -1,0 +1,11 @@
+ *.log
+*.pyc
+.idea
+dist
+build
+__pychache__
+Bandits.egg-info
+env
+venv
+.DS_store
+*.tmp
