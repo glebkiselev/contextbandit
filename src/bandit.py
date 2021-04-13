@@ -6,7 +6,7 @@ from copy import copy, deepcopy
 
 class BanditEnv(gym.Env):
 
-    def __init__(self, done_reward = 10, ref_reward = -5, full_tree_reward = -3, middle_tree_reward = -2, wrong_act_reward = -5):
+    def __init__(self, done_reward = 100, ref_reward = -5, full_tree_reward = -3, middle_tree_reward = -2, wrong_act_reward = -5):
 
         self.done = False
         self.state = None
@@ -21,7 +21,7 @@ class BanditEnv(gym.Env):
         self.action_space = spaces.Discrete(self.actions)
         self.observation_space = spaces.Discrete(1)
         self.war = wrong_act_reward
-        self.last_acts = [2, 5, 8]
+        self.unrefinable_acts = [0,1,2, 5, 8, 11]
         self._seed()
         self.used_states = set()
 
@@ -38,6 +38,7 @@ class BanditEnv(gym.Env):
         #     return self.state, self.done_reward, self.done, None
         #actions
         reward = -1
+        illigal = False
         if {0.1, 0.2, 0.3} <= self.used_states:
             reward+=self.done_reward
             self.done = True
@@ -47,6 +48,7 @@ class BanditEnv(gym.Env):
         if self.state_actions[act] != self.state:
             reward = self.war
             new_state = self.state
+            illigal = True
         else:
             if self.state == 0:
                 if act == 0:
@@ -86,10 +88,10 @@ class BanditEnv(gym.Env):
         # todo change for real value and teach on network
 
         if len(self.used_states)>1:
-            if np.random.randint(10) < 6 and action not in self.last_acts:
+            if np.random.randint(10) < 8 and action not in self.unrefinable_acts and not illigal:
                 reward+=self.rwd
-
-        self.used_states.add(copy(self.state))
+        if new_state == 0:
+            self.used_states.add(copy(self.state))
         self.state = new_state
 
         return self.state, reward, self.done, None
@@ -104,7 +106,23 @@ class BanditEnv(gym.Env):
 
     def render(self, mode='human', close=False):
         pass
-
+    # def render(self, policy=None, save_path=None):
+    #     import matplotlib.pyplot as plt
+    #     fig = plt.figure(1, figsize=(10, 8), dpi=50,
+    #                      facecolor='w', edgecolor='k')
+    #     plt.clf()
+    #     plt.xticks(np.arange(0, self.num_cols+1, 1))
+    #     plt.yticks(np.arange(0, self.num_rows+1, 1))
+    #     plt.grid(True)
+    #     plt.imshow(img, origin="lower", extent=[0, self.num_cols, 0, self.num_rows])
+    #     plt.title('title', fontsize=15)
+    #     plt.gca().invert_yaxis()
+    #     if save_path is not None:
+    #         plt.savefig(save_path)
+    #     else:
+    #         fig.canvas.draw()
+    #         plt.pause(0.00001)
+    #     return
 
 # class NineArmed(BanditEnv):
 #
