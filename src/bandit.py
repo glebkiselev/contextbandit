@@ -1,13 +1,17 @@
 import numpy as np
+import re
 import gym
+
 from gym import spaces
 from gym.utils import seeding
-from copy import copy, deepcopy
+from copy import copy
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from sklearn import linear_model
 
 class BanditEnv(gym.Env):
 
     def __init__(self, done_reward = 100, ref_reward = -5, full_tree_reward = -3, middle_tree_reward = -2, wrong_act_reward = -5):
-
         self.done = False
         self.state = None
         self.goal = None
@@ -24,13 +28,30 @@ class BanditEnv(gym.Env):
         self.unrefinable_acts = [0,1,2, 5, 8, 11]
         self._seed()
         self.used_states = set()
+        self.model = self.fit_model()
+
+    def fit_model(self):
+        self.X = []
+        self.y = []
+        with open("carusers_with_actions.txt", 'r') as f:
+            for line in f:
+                l = line.split(':')
+                self.y.append(int(l[0]))
+                self.X.append([float(s.strip()) for s in re.findall(r"[-+]?\d*\.\d+|\d+", l[1])])
+        self.X = np.array(self.X)
+        self.y = np.array(self.y)
+        self.X, self.y = shuffle(self.X, self.y, random_state=0)
+        x_train, x_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.3)
+        regr = linear_model.LinearRegression()
+        regr.fit(x_train, y_train)
+        return regr
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
 
-    def step(self, action):
+    def step(self, action, user):
         assert self.action_space.contains(action)
         # # goal check
         # if self.state == self.goal:
@@ -85,11 +106,11 @@ class BanditEnv(gym.Env):
                     reward += self.ftr
                 new_state = 0
         # randomize ref reward:
-        # todo change for real value and teach on network
-
-        if len(self.used_states)>1:
-            if np.random.randint(10) < 8 and action not in self.unrefinable_acts and not illigal:
-                reward+=self.rwd
+        # todo change for real value and update network
+        reward += self.network_reward(act, user)
+        # if len(self.used_states)>1:
+        #     if np.random.randint(10) < 8 and action not in self.unrefinable_acts and not illigal:
+        #         reward+=self.rwd
         if new_state == 0:
             self.used_states.add(copy(self.state))
         self.state = new_state
@@ -106,31 +127,16 @@ class BanditEnv(gym.Env):
 
     def render(self, mode='human', close=False):
         pass
-    # def render(self, policy=None, save_path=None):
-    #     import matplotlib.pyplot as plt
-    #     fig = plt.figure(1, figsize=(10, 8), dpi=50,
-    #                      facecolor='w', edgecolor='k')
-    #     plt.clf()
-    #     plt.xticks(np.arange(0, self.num_cols+1, 1))
-    #     plt.yticks(np.arange(0, self.num_rows+1, 1))
-    #     plt.grid(True)
-    #     plt.imshow(img, origin="lower", extent=[0, self.num_cols, 0, self.num_rows])
-    #     plt.title('title', fontsize=15)
-    #     plt.gca().invert_yaxis()
-    #     if save_path is not None:
-    #         plt.savefig(save_path)
-    #     else:
-    #         fig.canvas.draw()
-    #         plt.pause(0.00001)
-    #     return
 
-# class NineArmed(BanditEnv):
-#
-#     def __init__(self, bandits=9):
-#         # make random distribution of action choose
-#         p_dist = np.random.uniform(size=bandits)
-#         # make random distribution of env rewards
-#         r_dist = np.full(bandits, 1)
-#         BanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist)
-#         print("in bandit")
+    def network_reward(self, act, user):
+        reward = 0
+        if act not in [0, 1, 2]:
+            predicted_act = round(self.model.predict([user])[0])
+            if act == predicted_act:
+                reward+=5
+        return reward
+
+
+
+
 

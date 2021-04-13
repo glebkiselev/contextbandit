@@ -22,5 +22,5 @@ if __name__ == "__main__":
     print(all_rewards)
     print(average_rewards)
     policy = q_to_policy(agent.q)
-    print()
+    print(policy)
 

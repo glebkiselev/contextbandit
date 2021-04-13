@@ -1,6 +1,8 @@
 import sys
 from collections import defaultdict
 import numpy as np
+import re
+from sklearn.utils import shuffle
 
 class Agent:
     def act(self, state):
@@ -23,6 +25,14 @@ class QLearningAgent(Agent):
         self.epsilon = epsilon
         self.beta = beta
         self.policy = self._make_epsilon_greedy_policy()
+        self.X = []
+        self.y = []
+        with open("carusers_with_actions.txt", 'r') as f:
+            for line in f:
+                l = line.split(':')
+                self.y.append(int(l[0]))
+                self.X.append([float(s.strip()) for s in re.findall(r"[-+]?\d*\.\d+|\d+", l[1])])
+        self.X, self.y = shuffle(self.X, self.y, random_state=0)
 
     def _make_epsilon_greedy_policy(self):
         """
@@ -33,7 +43,6 @@ class QLearningAgent(Agent):
             best_action = np.argmax(self.q[state])
             A[best_action] += (1.0 - self.epsilon)
             return A
-
         return policy_fn
 
     def act(self, state):
@@ -64,8 +73,9 @@ class QLearningAgent(Agent):
             for _ in range(1000):
                 # choose action by eps greedy policy
                 action = self.act(state)
+                user = self.uspred(action)
                 # if illigal act -5 if nice act +5 reward else rew -1
-                next_state, reward, done, _ = self.environment.step(action)
+                next_state, reward, done, _ = self.environment.step(action, user)
                 next_state = str(next_state)
                 total_reward += reward
                 self.update(state, action, reward, next_state)
@@ -77,3 +87,16 @@ class QLearningAgent(Agent):
                 state = next_state
         # return total_total_reward / num_episodes, rewards  # return average eps reward
         return rewards, total_total_reward / num_episodes
+
+    def uspred(self, action):
+        """
+        Here we create a user vector for get additional
+        reward from the environment prediction function
+        todo - connect to real vk-bot
+        """
+        if action in [0, 1, 2]:
+            user = [0, 0, 0, 0, 0]
+        else:
+            users = [us for us, ac in zip(self.X, self.y) if ac == action]
+            user = users[np.random.randint(len(users))]
+        return user
