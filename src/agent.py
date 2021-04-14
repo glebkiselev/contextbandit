@@ -88,6 +88,18 @@ class QLearningAgent(Agent):
         # return total_total_reward / num_episodes, rewards  # return average eps reward
         return rewards, total_total_reward / num_episodes
 
+    def user_classification_on_batch(self, n = 4):
+        """
+        we create n groups of people using small batch and
+        linear regression. After that this batch is sent to
+        Q-agent to create Q-table. In this table every state has
+        a classification of actions that are applicable in it
+        for each group and a cost of each action.
+        In real life application this table can change cost values.
+        :return:
+        """
+        pass
+
     def uspred(self, action):
         """
         Here we create a user vector for get additional

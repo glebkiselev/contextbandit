@@ -128,6 +128,7 @@ class BanditEnv(gym.Env):
     def render(self, mode='human', close=False):
         pass
 
+
     def network_reward(self, act, user):
         reward = 0
         if act not in [0, 1, 2]:
