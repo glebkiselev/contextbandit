@@ -1,6 +1,6 @@
 from gym.envs.registration import register
 
-from .bandit import BanditEnv
+from .environment import BanditEnv
 
 environments = [['BanditEnv', 'v0']
                 ]
