@@ -3,9 +3,9 @@ env = gym.make("BanditEnv-v0")
 from Bandits.agent import QLearningAgent
 import numpy as np
 
-gamma = 1.0
+gamma = 0.1
 alpha=0.5
-epsilon=0.1
+epsilon=0.5
 
 
 def q_to_policy(q, offset=0):

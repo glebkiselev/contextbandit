@@ -102,7 +102,7 @@ class BanditEnv(gym.Env):
         if not illigal:
             predicted_group = round(self.model.predict([user])[0])
             if action in self.classes[predicted_group]:
-                reward += 10
+                reward += 5
             if {0.1, 0.2, 0.3} <= self.used_states[predicted_group]:
                 reward += self.done_reward
                 self.done = True
