@@ -1,8 +1,8 @@
 import sys
 from collections import defaultdict
 import numpy as np
-import re
 from sklearn.utils import shuffle
+import pandas as pd
 
 class Agent:
     def __init__(self):
@@ -29,14 +29,15 @@ class Agent:
         return chunk
 
 
-    def update_model(self, model = 'model.car', dataset = 'carusers_with_actions.csv', batch_size = 100):
-        import pandas as pd
+    def update_model(self, data = pd.DataFrame(), model = 'model.car', datasetfile = 'carusers_with_actions.csv', batch_size = 100):
         from sklearn.model_selection import train_test_split
         from sklearn.metrics import accuracy_score
         from sklearn.naive_bayes import GaussianNB
         import pickle
 
-        data = pd.read_csv(dataset)
+        if data.empty:
+            data = pd.read_csv(datasetfile)
+        #shuffle data
         data = data.sample(frac=1).reset_index(drop=True)
         # ".iloc"  - row_indexer, column_indexer
         X = data.iloc[:batch_size, 1:].values
@@ -52,7 +53,7 @@ class Agent:
         g_model = GaussianNB()
         g_model.fit(X_train, y_train)
         g_prediction = g_model.predict(X_test)
-        print(accuracy_score(g_prediction, y_test))
+        print(f"accuracy of classification by Gauss: {accuracy_score(g_prediction, y_test)}")
         pickle.dump(g_model, open(model, 'wb'))
         return True
 
@@ -77,7 +78,7 @@ class QLearningAgent(Agent):
         self.X = data.iloc[:,1:].values
         self.y = data.iloc[:,0].values
         self.X, self.y = shuffle(self.X, self.y, random_state=0)
-        # model = self.load_model()
+        self.model = self.load_model()
 
 
     def _make_epsilon_greedy_policy(self):
@@ -140,7 +141,7 @@ class QLearningAgent(Agent):
         # return total_total_reward / num_episodes, rewards  # return average eps reward
         return rewards, total_total_reward / num_episodes
 
-    def user_classification_on_batch(self, n = 4):
+    def classification_on_batch(self, n = 4):
         """
         we create n groups of people using small batch and
         linear regression. After that this batch is sent to
@@ -151,6 +152,10 @@ class QLearningAgent(Agent):
         :return:
         """
         pass
+
+    def classify(self, user):
+        return self.model.predict([user])[0]
+
 
     def uspred(self, action):
         """

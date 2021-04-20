@@ -94,11 +94,6 @@ class BanditEnv(gym.Env):
         # todo change for real value and update network
         predicted_group = None
 
-        # if len(self.used_states)>1:
-        #     if not illigal and action not in self.unrefinable_acts:
-        #             predicted_group = round(self.model.predict([user])[0])
-        #             if action in self.classes[predicted_group]:
-        #                 reward+=5
         if not illigal:
             predicted_group = round(self.model.predict([user])[0])
             if action in self.classes[predicted_group]:
