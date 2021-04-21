@@ -37,6 +37,7 @@ class Agent:
 
         if data.empty:
             data = pd.read_csv(datasetfile)
+            data.to_csv('test_batch.csv')
         #shuffle data
         data = data.sample(frac=1).reset_index(drop=True)
         # ".iloc"  - row_indexer, column_indexer
@@ -55,13 +56,13 @@ class Agent:
         g_prediction = g_model.predict(X_test)
         print(f"accuracy of classification by Gauss: {accuracy_score(g_prediction, y_test)}")
         pickle.dump(g_model, open(model, 'wb'))
-        return True
+        return g_model
 
 class QLearningAgent(Agent):
     """
     An implementation of the Q Learning agent.
     """
-    def __init__(self, env, gamma=1.0, alpha=0.5, epsilon=0.1, beta=0.2, user = None):
+    def __init__(self, env, gamma=1.0, alpha=0.5, epsilon=0.1, beta=0.2, zeroupdate = False):
         super(QLearningAgent, self).__init__()
         self.environment = env
         self.number_of_action = env.action_space.n
@@ -78,7 +79,10 @@ class QLearningAgent(Agent):
         self.X = data.iloc[:,1:].values
         self.y = data.iloc[:,0].values
         self.X, self.y = shuffle(self.X, self.y, random_state=0)
-        self.model = self.load_model()
+        if not zeroupdate:
+            self.model = self.load_model()
+        else:
+            self.model = self.update_model()
 
 
     def _make_epsilon_greedy_policy(self):
@@ -158,11 +162,5 @@ class QLearningAgent(Agent):
 
 
     def uspred(self, action):
-        """
-        Here we create a user vector for get additional
-        reward from the environment prediction function
-        todo - connect to real vk-bot
-        """
-
         user = self.X[np.random.randint(len(self.X))]
         return user

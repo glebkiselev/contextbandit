@@ -2,11 +2,13 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 from copy import copy
+import warnings
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 
 class BanditEnv(gym.Env):
 
-    def __init__(self, done_reward = 100, ref_reward = -5, full_tree_reward = -3, middle_tree_reward = -2, wrong_act_reward = -5):
+    def __init__(self, done_reward=100, ref_reward=-5, full_tree_reward=-3, middle_tree_reward=-2, wrong_act_reward=-5):
         self.done = False
         self.state = None
         self.goal = None
@@ -16,18 +18,19 @@ class BanditEnv(gym.Env):
         self.ftr = full_tree_reward
         self.mtr = middle_tree_reward
         self.actions = 12
-        self.state_actions = {0:0, 1:0, 2:0, 3:0.1, 4:0.1, 5:0.1, 6:0.2, 7: 0.2, 8:0.2, 9: 0.3, 10: 0.3, 11:0.3}
+        self.state_actions = {0: 0, 1: 0, 2: 0, 3: 0.1, 4: 0.1, 5: 0.1, 6: 0.2, 7: 0.2, 8: 0.2, 9: 0.3, 10: 0.3,
+                              11: 0.3}
         self.classes = {0: [0, 1, 2, 3, 6, 9], 1: [0, 1, 2, 4, 7, 10], 2: [0, 1, 2, 5, 8, 11]}
         self.action_space = spaces.Discrete(self.actions)
         self.observation_space = spaces.Discrete(1)
         self.war = wrong_act_reward
-        self.unrefinable_acts = [0,1,2, 5, 8, 11]
+        self.unrefinable_acts = [0, 1, 2, 5, 8, 11]
         self._seed()
-        self.used_states = {cl:set() for cl, acts in self.classes.items()}
+        self.used_states = {cl: set() for cl, acts in self.classes.items()}
         self.model = self.load_model()
+        self.df = self.load_dataset()
 
-
-    def load_model(self, model = 'model.car'):
+    def load_model(self, model='model.car'):
         import pickle
         try:
             loaded_model = pickle.load(open(model, 'rb'))
@@ -35,10 +38,14 @@ class BanditEnv(gym.Env):
             raise Exception('Wrong path to model file')
         return loaded_model
 
+    def load_dataset(self, dataset='test_batch.csv'):
+        import pandas as pd
+        df = pd.read_csv(dataset)
+        return df
+
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-
 
     def step(self, action, user):
         assert self.action_space.contains(action)
@@ -46,7 +53,7 @@ class BanditEnv(gym.Env):
         # if self.state == self.goal:
         #     self.done = True
         #     return self.state, self.done_reward, self.done, None
-        #actions
+        # actions
         reward = -1
         illigal = False
         new_state = None
@@ -102,7 +109,17 @@ class BanditEnv(gym.Env):
                 reward += self.done_reward
                 self.done = True
             elif new_state == 0 and not illigal:
-                self.used_states.setdefault(predicted_group, set().add(copy(self.state)))
+                for gr, sts in self.used_states.items():
+                    if gr == predicted_group:
+                        sts.add(self.state)
+                        break
+                # self.used_states.setdefault(predicted_group, set().add(copy(self.state)))
+            actions = self.df[self.df['State'] == user[0]][self.df['Gender'] == user[1]] \
+                [self.df['Interest'] == user[2]][self.df['Key-words in query'] == user[3]][
+                self.df['Prev Interest'] == user[4]][
+                'Action'].tolist()
+            if action in actions:
+                reward += 20
 
         self.state = new_state
 
@@ -112,20 +129,14 @@ class BanditEnv(gym.Env):
         pass
 
     def reset(self):
-        self.used_states = {cl:set() for cl, acts in self.classes.items()}
+        self.used_states = {cl: set() for cl, acts in self.classes.items()}
         self.state = 0
         return 0
 
     def render(self, mode='human', close=False):
         pass
 
-
     # def network_reward(self, act, user):
     #     reward = 0
     #     predicted_group = round(self.model.predict([user])[0])
     #     return reward
-
-
-
-
-
