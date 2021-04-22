@@ -10,6 +10,7 @@ gamma = 0.1
 alpha=0.5
 epsilon=0.5
 
+percent_of_biased = 8
 
 def q_to_policy(q, offset=0):
     optimal_policy_groups = {}
@@ -60,7 +61,7 @@ def make_bias(actions, dtime):
     new_actions = []
     biased = 0
     for action in actions:
-        if np.random.randint(10) < 4:
+        if np.random.randint(10) < percent_of_biased:
             for _, acts in state_acts.items():
                 if action in acts:
                     if action != acts[0] and dtime < 0:
@@ -126,11 +127,11 @@ if __name__ == "__main__":
     df = syntetic_batch(agent, 'config.ini')
     from sklearn.model_selection import train_test_split
     train, test = train_test_split(df, test_size=0.2)
-
+    agent.update_data(percent_of_biased)
     # olddf =  pd.read_csv('carusers_with_actions.csv')
     # train.append(olddf)
     agent.update_model(data = df)
-    agent.train(100, True)
+    all_rewards, average_rewards = agent.train(100, True)
     print_accuracy(agent, test)
 
 

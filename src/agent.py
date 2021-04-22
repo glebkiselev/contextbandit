@@ -86,6 +86,15 @@ class QLearningAgent(Agent):
         self.y = data.iloc[:,0].values
         self.X, self.y = shuffle(self.X, self.y, random_state=0)
         self.zero_act = 0
+        self.prev_acts = {}
+
+    def update_data(self, percent_of_biased):
+        self.q = defaultdict(lambda: [np.zeros(self.number_of_action) for _ in range(len(self.classes.keys()))])
+        data = self.load_dataset(batch_size = 100)
+        self.X = data.iloc[:,1:].values
+        self.y = data.iloc[:,0].values
+        self.X, self.y = shuffle(self.X, self.y, random_state=0)
+        self.environment.done_percent = 10 - percent_of_biased
 
 
     def _make_epsilon_greedy_policy(self):
@@ -110,6 +119,10 @@ class QLearningAgent(Agent):
             else:
                 self.zero_act = 0
             action = copy(self.zero_act)
+            # if action in self.prev_acts:
+            #     self.prev_acts[action]+=1
+            # else:
+            #     self.prev_acts[action] = 0
             # action = np.random.choice(len(self.classes.keys()))
         return action
 
@@ -138,6 +151,7 @@ class QLearningAgent(Agent):
             state = self.environment.reset()
             state = str(state)
             total_reward = 0.0
+            self.prev_acts = {}
             for _ in range(1000):
                 # choose action by eps greedy policy
                 action = self.act(state)
@@ -150,6 +164,7 @@ class QLearningAgent(Agent):
                 if done:
                     total_total_reward += total_reward
                     rewards.append(total_reward)
+                    #print(self.prev_acts)
                     break
 
                 state = next_state

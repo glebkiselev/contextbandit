@@ -29,6 +29,7 @@ class BanditEnv(gym.Env):
         self.used_states = {cl: dict() for cl, acts in self.classes.items()}
         self.model = self.load_model()
         self.df = self.load_dataset()
+        self.done_percent = 3
 
     def load_model(self, model='model.car'):
         import pickle
@@ -107,19 +108,17 @@ class BanditEnv(gym.Env):
         if not illigal:
             predicted_group = round(self.model.predict([user])[0])
             if action in self.classes[predicted_group]:
-                reward += 5
+                reward += 1
             if min([len(val) for el, val in self.used_states.items()]) == 3:
-                # print(min(min([list(val.values()) for el, val in self.used_states.items()])))
                 min_comes = 100
                 for group, states in self.used_states.items():
                     for state, comes in states.items():
                         if comes < min_comes:
                             min_comes = comes
-                if min_comes >= 20:
-                # if min(min([list(val.values()) for el, val in self.used_states.items()])) >= 10:
+                if min_comes >= self.done_percent:
                     reward += self.done_reward
                     self.done = True
-                    print(f'\nGoal achieved: {self.used_states}\n')
+                    # print(f'\nGoal achieved: {self.used_states}\n')
             if new_state == 0 and not illigal:
                 for gr, sts in self.used_states.items():
                     if gr == predicted_group:
@@ -128,13 +127,12 @@ class BanditEnv(gym.Env):
                         else:
                             sts[self.state] = 1
                         break
-                # self.used_states.setdefault(predicted_group, set().add(copy(self.state)))
             actions = self.df[self.df['State'] == user[0]][self.df['Gender'] == user[1]] \
                 [self.df['Interest'] == user[2]][self.df['Key-words in query'] == user[3]][
                 self.df['Prev Interest'] == user[4]][
                 'Action'].tolist()
             if action in actions:
-                reward += 20
+                reward += 30
 
         self.state = new_state
 
@@ -147,12 +145,10 @@ class BanditEnv(gym.Env):
         self.used_states = {cl: dict() for cl, acts in self.classes.items()}
         self.state = 0
         self.done = False
+        self.model = self.load_model()
+        self.df = self.load_dataset()
         return 0
 
     def render(self, mode='human', close=False):
         pass
 
-    # def network_reward(self, act, user):
-    #     reward = 0
-    #     predicted_group = round(self.model.predict([user])[0])
-    #     return reward
