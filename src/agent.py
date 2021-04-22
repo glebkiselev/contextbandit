@@ -1,5 +1,7 @@
 import sys
 from collections import defaultdict
+from copy import copy
+
 import numpy as np
 from sklearn.utils import shuffle
 import pandas as pd
@@ -23,7 +25,7 @@ class Agent:
             raise Exception('Wrong path to model file')
         return loaded_model
 
-    def load_dataset(self, dataset = 'carusers_with_actions.csv', batch_size = 100):
+    def load_dataset(self, dataset = 'test_batch.csv', batch_size = 100):
         import pandas as pd
         chunk = pd.read_csv(dataset, nrows=batch_size)
         return chunk
@@ -37,7 +39,8 @@ class Agent:
 
         if data.empty:
             data = pd.read_csv(datasetfile)
-            data.to_csv('test_batch.csv')
+            data.to_csv('test_batch.csv', index=False)
+
         #shuffle data
         data = data.sample(frac=1).reset_index(drop=True)
         # ".iloc"  - row_indexer, column_indexer
@@ -73,16 +76,16 @@ class QLearningAgent(Agent):
         self.epsilon = epsilon
         self.beta = beta
         self.policy = self._make_epsilon_greedy_policy()
-
         # todo - change to real user choosing
-        data = self.load_dataset(batch_size = 50)
-        self.X = data.iloc[:,1:].values
-        self.y = data.iloc[:,0].values
-        self.X, self.y = shuffle(self.X, self.y, random_state=0)
         if not zeroupdate:
             self.model = self.load_model()
         else:
             self.model = self.update_model()
+        data = self.load_dataset(batch_size = 100)
+        self.X = data.iloc[:,1:].values
+        self.y = data.iloc[:,0].values
+        self.X, self.y = shuffle(self.X, self.y, random_state=0)
+        self.zero_act = 0
 
 
     def _make_epsilon_greedy_policy(self):
@@ -97,9 +100,17 @@ class QLearningAgent(Agent):
         return policy_fn
 
     def act(self, state):
-        group = np.random.choice(len(self.classes.keys()))
-        action_probs = self.policy(state, group)
-        action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
+        if state != '0':
+            group = np.random.choice(len(self.classes.keys()))
+            action_probs = self.policy(state, group)
+            action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
+        else:
+            if self.zero_act < len(self.classes.keys())-1:
+                self.zero_act+=1
+            else:
+                self.zero_act = 0
+            action = copy(self.zero_act)
+            # action = np.random.choice(len(self.classes.keys()))
         return action
 
     def update(self, state, action, reward, next_state, gr):

@@ -89,8 +89,9 @@ def print_accuracy(agent,data):
     y = data['Action'].tolist()
     X = data.iloc[:,1:].values
     predicted = predict_actions(agent,X)
+    print(q_to_policy(agent.q))
     print(f"\naccuracy of retrained agent is {accuracy_score(y, predicted)}")
-    print()
+    return True
 
 def syntetic_batch(agent, confile, save = True):
     config = configparser.ConfigParser()
@@ -119,14 +120,15 @@ if __name__ == "__main__":
     agent = QLearningAgent(env, gamma=gamma, alpha=alpha, epsilon=epsilon, zeroupdate = True)
 
     all_rewards, average_rewards = agent.train(100, True)
+    print(q_to_policy(agent.q))
     # print(all_rewards)
     # print(average_rewards)
     df = syntetic_batch(agent, 'config.ini')
     from sklearn.model_selection import train_test_split
     train, test = train_test_split(df, test_size=0.2)
 
-    olddf =  pd.read_csv('carusers_with_actions.csv')
-    train.append(olddf)
+    # olddf =  pd.read_csv('carusers_with_actions.csv')
+    # train.append(olddf)
     agent.update_model(data = df)
     agent.train(100, True)
     print_accuracy(agent, test)
